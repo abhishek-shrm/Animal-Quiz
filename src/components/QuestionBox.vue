@@ -9,12 +9,12 @@
     <hr class="my-4">
 
     <b-list-group>
-      <b-list-group-item v-for="(answer,index) in answers" :key="index" @click="selectAnswer(index)" :class="[selectedIndex===index ? 'selected':'']">
+      <b-list-group-item v-for="(answer,index) in shuffledAnswers" :key="index" @click="selectAnswer(index)" :class="answeredClass(index)">
         {{answer}}
       </b-list-group-item>
     </b-list-group>
 
-    <b-button variant="primary" href="#">Submit</b-button>
+    <b-button variant="primary" @click="submitAnswer" :disabled="selectedIndex===null|| answered">Submit</b-button>
     <b-button @click="next" variant="success" href="#">Next</b-button>
      </b-jumbotron>
   </div>
@@ -22,40 +22,69 @@
 
 <script>
 
-import _ from 'lodash'
+import _ from 'lodash'//_ is the convention for loading lodash
 
 export default {
   props:{
     currentQuestion:Object,
-    next:Function
+    next:Function,
+    increment:Function
   },
-  computed:{
+  data:function(){
+    return {
+      selectedIndex:null,
+      correctIndex:null,
+      shuffledAnswers:[],
+      answered:false
+    };
+  },
+   computed:{
     answers(){
       let answers=[...this.currentQuestion.incorrect_answers];
       answers.push(this.currentQuestion.correct_answer);
       return answers;
     }
   },
-  data(){
-    return {
-      selectedIndex:null,
-      shuffledAnswers:[]
-    };
-  },
   watch:{
-    currentQuestion(){
-      this.selectedIndex=null;
-      this.shuffleAnswers();
+    //It is for shuffling the answers, instead of this mounted hook can also be used
+    currentQuestion:{
+      immediate:true,//it allows the changes to occur right from the staring of program
+      handler(){
+        this.selectedIndex=null;
+        this.answered=false;
+        this.shuffleAnswers();
+      }
     }
+    
+    // (){
+    //   this.selectedIndex=null;
+    //   this.shuffleAnswers();
+    // }
   },
   methods:{
     selectAnswer(index){
       this.selectedIndex=index;
       console.log(index);
     },
+    submitAnswer(){
+      let isCorrect=false;
+      if(this.selectedIndex===this.correctIndex){
+        isCorrect=true;
+      }
+      this.answered=true;
+      this.increment(isCorrect);
+    },
     shuffleAnswers(){
       let answers=[...this.currentQuestion.incorrect_answers,this.currentQuestion.correct_answer];
       this.shuffledAnswers=_.shuffle(answers);
+      this.correctIndex=this.shuffledAnswers.indexOf(this.currentQuestion.correct_answer);// for storing the index of correct answer
+    },
+    answeredClass(index){
+      let answerClass='';
+      answerClass=!this.answered && this.selectedIndex===index?'selected':
+                   this.answered && this.correctIndex===index? 'correct':
+                   this.answered && this.selectedIndex===index && this.correctIndex!==index ? 'incorrect':'';
+      return answerClass;
     }
   }
 }
@@ -78,8 +107,10 @@ export default {
   }
   .correct{
     background-color: green;
+    color:whitesmoke;
   }
   .incorrect{
     background-color:red;
+    color: whitesmoke;
   }
 </style>
